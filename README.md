@@ -4,7 +4,7 @@ Datadog integration for Pyramid.
 
 ## Installation
 
-```python
+```
 pip install pyramid_datadog
 ```
 
