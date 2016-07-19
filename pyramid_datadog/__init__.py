@@ -32,11 +32,16 @@ def on_new_request(new_request_event):
 def on_new_response(new_response_event):
     print 'Pyramid triggered a NewResponse event'
     datadog = new_response_event.request.registry.datadog
-    start_time = new_response_event.request.start_time
-    duration = time.time() - start_time
+    request = new_response_event.request
+    duration = time.time() - request.start_time
+    template_render_time = time.time() - request.before_render_start
     datadog.timing(
         'pyramid.request.time', duration,
         tags=['pyramid_datadog:request_time'],
+    )
+    datadog.timing(
+        'pyramid.template.time', duration,
+        tags=['pyramid_datadog:template_time'],
     )
 
 
@@ -45,6 +50,8 @@ def on_context_found(context_found_event):
     datadog = context_found_event.request.registry.datadog
     start_time = context_found_event.request.start_time
     duration = time.time() - start_time
+    request = context_found_event.request
+    request.view_start = time.time()
     datadog.timing(
         'pyramid.context_found.time', duration,
         tags=['pyramid_datadog:context_found'],
@@ -65,13 +72,13 @@ def on_before_traversal(before_traversal_event):
 def on_before_render(before_render_event):
     print 'BeforeRender'
     datadog = before_render_event['request'].registry.datadog
-    start_time = before_render_event['request'].start_time
-    duration = time.time() - start_time
+    view_start = before_render_event['request'].view_start
+    view_duration = time.time() - view_start
     datadog.timing(
-        'pyramid.before_render.time', duration,
-        tags=['pyramid_datadog:before_render'],
+        'pyramid.view_duration', view_duration,
+        tags=['pyramid_datadog'],
     )
-
+    request.before_render_start = time.time()
 
 def includeme(config):
     config.add_directive('configure_metrics', configure_metrics)
