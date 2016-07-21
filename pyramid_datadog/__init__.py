@@ -9,8 +9,6 @@ from pyramid.events import (
     BeforeTraversal,
     BeforeRender)
 
-timings = {}
-
 
 def configure_metrics(config, datadog_metrics):
     print 'configure_metrics called'
@@ -29,6 +27,7 @@ def on_app_created(app_created_event):
 def on_new_request(new_request_event):
     print 'Pyramid triggered a NewRequest event'
     request = new_request_event.request
+    request.timings = {}
     request.timings['new_request_start'] = time.time()
     datadog = request.registry.datadog
     datadog.increment(
@@ -45,7 +44,7 @@ def on_before_traversal(before_traversal_event):
     datadog = request.registry.datadog
     datadog.timing(
         'pyramid.traversal.duration',
-        request['traversal_duration'],
+        request.timings['traversal_duration'],
         tags=['pyramid_datadog:traversal'],
     )
 
