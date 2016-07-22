@@ -10,6 +10,10 @@ from pyramid.events import (
     BeforeRender)
 
 
+def time_ms():
+    return time.time() * 1000
+
+
 def configure_metrics(config, datadog_metrics):
     config.registry.datadog = datadog_metrics
 
@@ -17,7 +21,7 @@ def configure_metrics(config, datadog_metrics):
 def on_app_created(app_created_event):
     datadog = app_created_event.app.registry.datadog
     datadog.event(
-        'Pyramid app started',
+        'Pyramid_app_started',
         'The Pyramid application has started',
         tags=['pyramid_datadog']
     )
@@ -26,7 +30,7 @@ def on_app_created(app_created_event):
 def on_new_request(new_request_event):
     request = new_request_event.request
     request.timings = {}
-    request.timings['new_request_start'] = time.time()
+    request.timings['new_request_start'] = time_ms()
     datadog = request.registry.datadog
     datadog.increment(
         'pyramid.request.count',
@@ -35,16 +39,10 @@ def on_new_request(new_request_event):
 
 
 def on_before_traversal(before_traversal_event):
-    pass
-
-
-def on_context_found(context_found_event):
-    request = context_found_event.request
+    request = before_traversal_event.request
     timings = request.timings
-    timings['route_match_duration'] = \
-        time.time() - timings['new_request_start']
-    timings['view_code_start'] = time.time()
     datadog = request.registry.datadog
+    timings['route_match'] = time_ms() - timings['new_request_start']
     datadog.timing(
         'pyramid.route_match.duration',
         timings['route_match_duration'],
@@ -52,40 +50,36 @@ def on_context_found(context_found_event):
     )
 
 
+def on_context_found(context_found_event):
+    request = context_found_event.request
+    timings = request.timings
+    timings['traversal_duration'] = time_ms() - timings['new_request_start']
+    timings['view_code_start'] = time_ms()
+    datadog = request.registry.datadog
+    datadog.timing(
+        'pyramid.traversal.duration',
+        timings['traversal_duration'],
+        tags=['pyramid_datadog'],
+    )
+
+
 def on_before_render(before_render_event):
     request = before_render_event['request']
     timings = request.timings
-    timings['view_duration'] = time.time() - timings['view_code_start']
+    timings['view_duration'] = time_ms() - timings['view_code_start']
     datadog = request.registry.datadog
     datadog.timing(
         'pyramid.view_duration',
         timings['view_duration'],
         tags=['pyramid_datadog'],
     )
-    timings['before_render_start'] = time.time()
-
-
-def data_dog_increment_status_code(status_code, datadog):
-
-    granular_status_code_query_string = 'pyramid.request.http.status_code.%s'\
-        % status_code
-    datadog.increment(
-        granular_status_code_query_string,
-        tags=['pyramid_datadog'],
-    )
-
-    status_code_query_string = 'pyramid.request.http.status_code.%sxx'\
-        % status_code[0]
-    datadog.increment(
-        status_code_query_string,
-        tags=['pyramid_datadog'],
-    )
+    timings['before_render_start'] = time_ms()
 
 
 def on_new_response(new_response_event):
     request = new_response_event.request
     timings = request.timings
-    new_response_time = time.time()
+    new_response_time = time_ms()
     timings['request_duration'] = \
         new_response_time - timings['new_request_start']
     timings['template_render_duration'] = \
@@ -103,7 +97,15 @@ def on_new_response(new_response_event):
     )
 
     status_code = request.response.status
-    data_dog_increment_status_code(status_code, datadog)
+    datadog.increment(
+        'pyramid.response.http.status_code.%s' % status_code,
+        tags=['pyramid_datadog'],
+    )
+
+    datadog.increment(
+        'pyramid.response.http.status_code.%sxx' % status_code[0],
+        tags=['pyramid_datadog'],
+    )
 
 
 def includeme(config):
