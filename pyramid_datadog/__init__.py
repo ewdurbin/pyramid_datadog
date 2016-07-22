@@ -42,7 +42,7 @@ def on_before_traversal(before_traversal_event):
     request = before_traversal_event.request
     timings = request.timings
     datadog = request.registry.datadog
-    timings['route_match'] = time_ms() - timings['new_request_start']
+    timings['route_match_duration'] = time_ms() - timings['new_request_start']
     datadog.timing(
         'pyramid.route_match.duration',
         timings['route_match_duration'],
