@@ -14,7 +14,11 @@ def time_ms():
     return time.time() * 1000
 
 
-def configure_metrics(config, datadog_metrics, namespace=None):
+def configure_metrics(config, namespace, datadog_metrics):
+    '''
+    * namespace: prefix used for all metrics
+    * datadog_metrics: datadog metrics object initialized by user
+    '''
     config.registry.datadog = datadog_metrics
     config.registry.datadog_namespace = namespace
 
