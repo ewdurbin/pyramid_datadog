@@ -97,32 +97,44 @@ def on_new_response(new_response_event):
     timings = request.timings
     timings['request_duration'] = \
         new_response_time - timings['new_request_start']
-    timings['template_render_duration'] = \
-        new_response_time - timings['before_render_start']
 
+    tags = [request.registry.datadog_app_tag]
     datadog = request.registry.datadog
-    route_tag = "route:%s" % request.matched_route.name
+
+    if request.matched_route:
+        route_tag = "route:%s" % request.matched_route.name
+        tags.append(route_tag)
+
+        timings['template_render_duration'] = \
+            new_response_time - timings['before_render_start']
+
+        datadog.timing(
+            'pyramid.template_render.duration',
+            timings['template_render_duration'],
+            tags=tags,
+        )
+
     datadog.timing(
         'pyramid.request.duration',
         timings['request_duration'],
-        tags=[request.registry.datadog_app_tag, route_tag],
-    )
-    datadog.timing(
-        'pyramid.template_render.duration',
-        timings['template_render_duration'],
-        tags=[request.registry.datadog_app_tag, route_tag],
+        tags=tags,
     )
 
     status_code = request.response.status
     datadog.increment(
         'pyramid.response.status_code.%s' % status_code,
-        tags=[request.registry.datadog_app_tag, route_tag],
+        tags=tags,
     )
 
     datadog.increment(
         'pyramid.response.status_code.%sxx' % status_code[0],
-        tags=[request.registry.datadog_app_tag, route_tag],
+        tags=tags,
     )
+
+
+
+
+
 
 
 def includeme(config):
