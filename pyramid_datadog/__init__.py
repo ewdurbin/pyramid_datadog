@@ -14,21 +14,23 @@ def time_ms():
     return time.time() * 1000
 
 
-def configure_metrics(config, namespace, datadog_metrics):
+def configure_metrics(config, app_name, datadog_metrics):
     '''
-    * namespace: prefix used for all metrics
+    * app_name: name of your application that will be in a tag
     * datadog_metrics: datadog metrics object initialized by user
     '''
     config.registry.datadog = datadog_metrics
-    config.registry.datadog_namespace = namespace
+    config.registry.datadog_app_name = app_name
+    config.registry.datadog_app_tag = "app:%s" % app_name
 
 
 def on_app_created(app_created_event):
-    datadog = app_created_event.app.registry.datadog
+    registry = app_created_event.app.registry
+    datadog = registry.datadog
     datadog.event(
-        'Pyramid_app_started',
-        'The Pyramid application has started',
-        tags=['pyramid_datadog']
+        'Pyramid application %s started' % registry.datadog_app_name,
+        'Pyramid application %s started' % registry.datadog_app_name,
+        tags=[registry.datadog_app_tag]
     )
 
 
@@ -36,10 +38,11 @@ def on_new_request(new_request_event):
     request = new_request_event.request
     request.timings = {}
     request.timings['new_request_start'] = time_ms()
+
     datadog = request.registry.datadog
     datadog.increment(
-        '%s.request.count' % request.registry.datadog_namespace,
-        tags=['pyramid_datadog'],
+        'pyramid.request.count',
+        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -51,9 +54,9 @@ def on_before_traversal(before_traversal_event):
 
     datadog = request.registry.datadog
     datadog.timing(
-        '%s.route_match.duration' % request.registry.datadog_namespace,
+        'pyramid.route_match.duration',
         timings['route_match_duration'],
-        tags=['pyramid_datadog'],
+        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -66,9 +69,9 @@ def on_context_found(context_found_event):
 
     datadog = request.registry.datadog
     datadog.timing(
-        '%s.traversal.duration' % request.registry.datadog_namespace,
+        'pyramid.traversal.duration',
         timings['traversal_duration'],
-        tags=['pyramid_datadog'],
+        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -81,9 +84,9 @@ def on_before_render(before_render_event):
 
     datadog = request.registry.datadog
     datadog.timing(
-        '%s.view_duration' % request.registry.datadog_namespace,
+        'pyramid.view.duration',
         timings['view_duration'],
-        tags=['pyramid_datadog'],
+        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -98,32 +101,27 @@ def on_new_response(new_response_event):
         new_response_time - timings['before_render_start']
 
     datadog = request.registry.datadog
+    route_tag = "route:%s" % request.matched_route.name
     datadog.timing(
-        '%s.request.duration' % request.registry.datadog_namespace,
+        'pyramid.request.duration',
         timings['request_duration'],
-        tags=['pyramid_datadog'],
+        tags=[request.registry.datadog_app_tag, route_tag],
     )
     datadog.timing(
-        '%s.template_render.duration' % request.registry.datadog_namespace,
+        'pyramid.template_render.duration',
         timings['template_render_duration'],
-        tags=['pyramid_datadog'],
+        tags=[request.registry.datadog_app_tag, route_tag],
     )
 
     status_code = request.response.status
     datadog.increment(
-        '%s.response.http.status_code.%s' % (
-            request.registry.datadog_namespace,
-            status_code
-        ),
-        tags=['pyramid_datadog'],
+        'pyramid.response.status_code.%s' % status_code,
+        tags=[request.registry.datadog_app_tag, route_tag],
     )
 
     datadog.increment(
-        '%s.response.http.status_code.%sxx' % (
-            request.registry.datadog_namespace,
-            status_code[0]
-        ),
-        tags=['pyramid_datadog'],
+        'pyramid.response.status_code.%sxx' % status_code[0],
+        tags=[request.registry.datadog_app_tag, route_tag],
     )
 
 
