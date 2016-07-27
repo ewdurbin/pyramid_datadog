@@ -99,14 +99,15 @@ def on_new_response(new_response_event):
         route_tag = "route:%s" % request.matched_route.name
         tags.append(route_tag)
 
-        timings['template_render_duration'] = \
-            new_response_time - timings['before_render_start']
+        if 'before_render_start' in timings:
+            timings['template_render_duration'] = \
+                new_response_time - timings['before_render_start']
 
-        datadog.timing(
-            'pyramid.template_render.duration',
-            timings['template_render_duration'],
-            tags=tags,
-        )
+            datadog.timing(
+                'pyramid.template_render.duration',
+                timings['template_render_duration'],
+                tags=tags,
+            )
 
     datadog.timing(
         'pyramid.request.duration',
