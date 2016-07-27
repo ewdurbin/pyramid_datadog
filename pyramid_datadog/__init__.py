@@ -48,7 +48,7 @@ def on_before_traversal(before_traversal_event):
 
     datadog = request.registry.datadog
     datadog.timing(
-        'pyramid.route_match.duration',
+        'pyramid.request.duration.route_match',
         timings['route_match_duration'],
         tags=[request.registry.datadog_app_tag],
     )
@@ -63,7 +63,7 @@ def on_context_found(context_found_event):
 
     datadog = request.registry.datadog
     datadog.timing(
-        'pyramid.traversal.duration',
+        'pyramid.request.duration.traversal',
         timings['traversal_duration'],
         tags=[request.registry.datadog_app_tag],
     )
@@ -78,7 +78,7 @@ def on_before_render(before_render_event):
 
     datadog = request.registry.datadog
     datadog.timing(
-        'pyramid.view.duration',
+        'pyramid.request.duration.view',
         timings['view_duration'],
         tags=[request.registry.datadog_app_tag],
     )
@@ -104,13 +104,13 @@ def on_new_response(new_response_event):
                 new_response_time - timings['before_render_start']
 
             datadog.timing(
-                'pyramid.template_render.duration',
+                'pyramid.request.duration.template_render',
                 timings['template_render_duration'],
                 tags=tags,
             )
 
     datadog.timing(
-        'pyramid.request.duration',
+        'pyramid.request.duration.total',
         timings['request_duration'],
         tags=tags,
     )
