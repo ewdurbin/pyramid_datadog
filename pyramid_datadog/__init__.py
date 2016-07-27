@@ -39,12 +39,6 @@ def on_new_request(new_request_event):
     request.timings = {}
     request.timings['new_request_start'] = time_ms()
 
-    datadog = request.registry.datadog
-    datadog.increment(
-        'pyramid.request.count',
-        tags=[request.registry.datadog_app_tag],
-    )
-
 
 def on_before_traversal(before_traversal_event):
     request = before_traversal_event.request
@@ -120,21 +114,14 @@ def on_new_response(new_response_event):
         tags=tags,
     )
 
-    status_code = request.response.status
+    status_code = str(new_response_event.response.status_code)
     datadog.increment(
-        'pyramid.response.status_code.%s' % status_code,
-        tags=tags,
+        'pyramid.request.count',
+        tags=tags + [
+            "status_code:%s" % status_code,
+            "status_type:%sxx" % status_code[0]
+        ],
     )
-
-    datadog.increment(
-        'pyramid.response.status_code.%sxx' % status_code[0],
-        tags=tags,
-    )
-
-
-
-
-
 
 
 def includeme(config):
