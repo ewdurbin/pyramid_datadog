@@ -109,15 +109,10 @@ def on_new_response(new_response_event):
                 tags=tags,
             )
 
+    status_code = str(new_response_event.response.status_code)
     datadog.timing(
         'pyramid.request.duration.total',
         timings['request_duration'],
-        tags=tags,
-    )
-
-    status_code = str(new_response_event.response.status_code)
-    datadog.increment(
-        'pyramid.request.count',
         tags=tags + [
             "status_code:%s" % status_code,
             "status_type:%sxx" % status_code[0]
