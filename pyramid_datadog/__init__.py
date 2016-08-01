@@ -124,6 +124,9 @@ def includeme(config):
     '''
     Events are triggered in the following chronological order:
     NewRequest > BeforeTraversal > ContextFound > BeforeRender > NewResponse
+
+    Note that not all events may be triggered depending on the request scenario
+    eg. 404 Not Found would not trigger ContextFound event.
     '''
     config.add_directive('configure_metrics', configure_metrics)
     config.add_subscriber(on_app_created, ApplicationCreated)
