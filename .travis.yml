@@ -16,4 +16,5 @@ script:
   - tox
 
 after_script:
-  - [[ $TRAVIS_PULL_REQUEST != false ]] && PR_NUM=$TRAVIS_PULL_REQUEST; curl --header "X-Couverture-Pull-Request: $PR_NUM" --data-binary @coverage.xml "https://app.couverture.io/coverage/github/SurveyMonkey/pyramid_datadog/$TRAVIS_COMMIT/$TOXENV"
+  - |
+      [[ $TRAVIS_PULL_REQUEST != false ]] && PR_NUM=$TRAVIS_PULL_REQUEST; curl --header "X-Couverture-Pull-Request: $PR_NUM" --data-binary @coverage.xml "https://app.couverture.io/coverage/github/SurveyMonkey/pyramid_datadog/$TRAVIS_COMMIT/$TOXENV"
