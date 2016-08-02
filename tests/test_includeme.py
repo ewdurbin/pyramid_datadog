@@ -2,31 +2,35 @@ import mock
 
 
 def test_includeme():
-    from pyramid_datadog import includeme
+
+    from pyramid.events import (
+        ApplicationCreated,
+        NewResponse,
+        NewRequest,
+        ContextFound,
+        BeforeTraversal,
+        BeforeRender)
+
+    from pyramid_datadog import (
+        includeme,
+        configure_metrics,
+        on_app_created,
+        on_new_request,
+        on_before_traversal,
+        on_context_found,
+        on_before_render,
+        on_new_response
+    )
 
     config = mock.Mock()
 
-    configure_metrics = mock.Mock()
-    on_app_created = mock.Mock()
-    on_new_request = mock.Mock()
-    on_before_traversal = mock.Mock()
-    on_context_found = mock.Mock()
-    on_before_render = mock.Mock()
-    on_app_created = mock.Mock()
-
-    ApplicationCreated = mock.Mock()
-    NewRequest = mock.Mock()
-    BeforeTraversal = mock.Mock()
-    ContextFound = mock.Mock()
-    BeforeRender = mock.Mock()
-    ApplicationCreated = mock.Mock()
-
     includeme(config)
-
-    assert config.add_directive.called_once_with('configure_metrics', configure_metrics)
-    assert config.add_subscriber.called_once_with(on_app_created, ApplicationCreated)
-    assert config.add_subscriber.called_once_with(on_new_request, NewRequest)
-    assert config.add_subscriber.called_once_with(on_before_traversal, BeforeTraversal)
-    assert config.add_subscriber.called_once_with(on_context_found, ContextFound)
-    assert config.add_subscriber.called_once_with(on_before_render, BeforeRender)
-    assert config.add_subscriber.called_once_with(on_app_created, ApplicationCreated)
+    config.add_directive.assert_called_once_with('configure_metrics', configure_metrics)
+    config.add_subscriber.assert_has_calls([
+        mock.call(on_app_created, ApplicationCreated),
+        mock.call(on_new_request, NewRequest),
+        mock.call(on_before_traversal, BeforeTraversal),
+        mock.call(on_context_found, ContextFound),
+        mock.call(on_before_render, BeforeRender),
+        mock.call(on_new_response, NewResponse),
+    ])

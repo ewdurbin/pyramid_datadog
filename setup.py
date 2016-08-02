@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 version = '0.1.0.dev0'
 
-requires = []
+requires = ['pyramid']
 
 setup(
     name='pyramid_datadog',
