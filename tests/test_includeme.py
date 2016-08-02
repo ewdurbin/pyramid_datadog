@@ -9,6 +9,7 @@ from pyramid_datadog import (
     on_context_found,
     on_before_render,
     on_new_response,
+    time_ms,
 )
 
 
@@ -149,3 +150,10 @@ def test_on_new_response(time_ms_mock):
             tags=['app:app_name', 'route:test_route', 'status_code:200', 'status_type:2xx']
         ),
     ])
+
+
+@patch('time.time')
+def test_time_ms(mock_time):
+    mock_time.return_value = 1
+    return_value = time_ms()
+    assert return_value == 1000
