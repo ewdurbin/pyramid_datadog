@@ -21,7 +21,7 @@ def configure_metrics(config, app_name, datadog_metrics):
     '''
     config.registry.datadog = datadog_metrics
     config.registry.datadog_app_name = app_name
-    config.registry.datadog_app_tag = "app:%s" % app_name
+    config.registry.datadog_app_tag = 'app:%s' % app_name
 
 
 def on_app_created(app_created_event):
