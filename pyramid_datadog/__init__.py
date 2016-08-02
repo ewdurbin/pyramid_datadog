@@ -96,7 +96,7 @@ def on_new_response(new_response_event):
     datadog = request.registry.datadog
 
     if request.matched_route:
-        route_tag = "route:%s" % request.matched_route.name
+        route_tag = 'route:%s' % request.matched_route.name
         tags.append(route_tag)
 
         if 'before_render_start' in timings:
@@ -114,8 +114,8 @@ def on_new_response(new_response_event):
         'pyramid.request.duration.total',
         timings['request_duration'],
         tags=tags + [
-            "status_code:%s" % status_code,
-            "status_type:%sxx" % status_code[0]
+            'status_code:%s' % status_code,
+            'status_type:%sxx' % status_code[0]
         ],
     )
 

@@ -101,9 +101,51 @@ def test_on_context_found(time_ms_mock):
     )
 
 
-def test_on_before_render():
-    pass
+@patch('pyramid_datadog.time_ms')
+def test_on_before_render(time_ms_mock):
+    before_render_event = mock.Mock()
+    before_render_event = {'request': mock.Mock()}
+    timings = before_render_event['request'].timings = {}
+    before_render_event['request'].registry.datadog_app_tag = 'app:app_name'
+    timings['view_code_start'] = 3
+    time_ms_mock.return_value = 4
+
+    on_before_render(before_render_event)
+
+    assert timings['view_duration'] == 1
+    assert timings['before_render_start'] == 4
+
+    before_render_event['request'].registry.datadog.timing.assert_called_once_with(
+        'pyramid.request.duration.view',
+        1,
+        tags=['app:app_name']
+    )
 
 
-def test_on_new_response():
-    pass
+@patch('pyramid_datadog.time_ms')
+def test_on_new_response(time_ms_mock):
+    new_response_event = mock.Mock()
+    new_response_event.request.registry.datadog_app_tag = 'app:app_name'
+    new_response_event.request.matched_route.name = 'test_route'
+    new_response_event.response.status_code = 200
+    time_ms_mock.return_value = 5
+    timings = new_response_event.request.timings = {}
+    timings['new_request_start'] = 1
+    timings['before_render_start'] = 4
+
+    on_new_response(new_response_event)
+
+    assert timings['request_duration'] == 4
+    assert timings['template_render_duration'] == 1
+    new_response_event.request.registry.datadog.timing.assert_has_calls([
+        mock.call(
+            'pyramid.request.duration.template_render',
+            1,
+            tags=['app:app_name', 'route:test_route']
+        ),
+        mock.call(
+            'pyramid.request.duration.total',
+            4,
+            tags=['app:app_name', 'route:test_route', 'status_code:200', 'status_type:2xx']
+        ),
+    ])
