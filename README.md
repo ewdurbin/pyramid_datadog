@@ -39,6 +39,5 @@ Using pyramid.events pyramid_datadog will log the following metrics in datadog:
 | pyramid.request.duration.total          | route, status_code, status_type|
 
 
-```
+
 Please refer to the following link for information on the chronological order of events during a pyramid request http://docs.pylonsproject.org/projects/pyramid/en/latest/narr/router.html
-```

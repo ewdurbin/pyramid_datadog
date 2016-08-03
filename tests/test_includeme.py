@@ -102,6 +102,7 @@ def test_on_before_render(time_ms_mock):
     before_render_event = mock.Mock()
     before_render_event = {'request': mock.Mock()}
     timings = before_render_event['request'].timings = {}
+    before_render_event['request'].matched_route.name = 'route_name'
     timings['view_code_start'] = 3
     time_ms_mock.return_value = 4
 
@@ -112,6 +113,7 @@ def test_on_before_render(time_ms_mock):
     before_render_event['request'].registry.datadog.timing.assert_called_once_with(
         'pyramid.request.duration.view',
         1,
+        tags=['route:route_name']
     )
 
 
