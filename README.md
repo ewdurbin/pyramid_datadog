@@ -27,18 +27,20 @@ def main(global_config, **settings):
 
 ## What pyramid_datadog will measure for you
 
-```
 Using pyramid.events pyramid_datadog will log the following metrics in datadog:
-```
 
-```python
-  pyramid.request.duration.route_match
-  pyramid.request.duration.traversal
-  pyramid.request.duration.view
-  pyramid.request.duration.template_render tags = route
-  pyramid.request.duration.total tags = route, status_code and status_type
-```
 
 ```
-Please refer to http://docs.pylonsproject.org/projects/pyramid/en/latest/narr/router.html
+| Metric                                  | Tags                           |
+| ----------------------------------------|:------------------------------:|
+| pyramid.request.duration.route_match    |                                |
+| pyramid.request.duration.traversal      |                                |
+| pyramid.request.duration.view           |                                |
+| pyramid.request.duration.template_render| route                          |
+| pyramid.request.duration.view           | route, status_code, status_type|
+
+```
+
+```
+Please refer to the following link for information on the chronological order of events during a pyrmaid request http://docs.pylonsproject.org/projects/pyramid/en/latest/narr/router.html
 ```
