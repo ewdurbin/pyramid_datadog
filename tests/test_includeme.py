@@ -1,4 +1,5 @@
 import mock
+import pytest
 from mock import patch
 from pyramid_datadog import (
     includeme,
@@ -115,20 +116,8 @@ def test_on_before_render(time_ms_mock):
 
 
 @patch('pyramid_datadog.time_ms')
-def test_on_new_response(time_ms_mock):
-    new_response_event = mock.Mock()
-    new_response_event.request.matched_route.name = 'test_route'
-    new_response_event.response.status_code = 200
-    time_ms_mock.return_value = 5
-    timings = new_response_event.request.timings = {}
-    timings['new_request_start'] = 1
-    timings['before_render_start'] = 4
-
-    on_new_response(new_response_event)
-
-    assert timings['request_duration'] == 4
-    assert timings['template_render_duration'] == 1
-    new_response_event.request.registry.datadog.timing.assert_has_calls([
+@pytest.mark.parametrize("route_name, before_render_start, expected", [
+    ('test_route', 4, [
         mock.call(
             'pyramid.request.duration.template_render',
             1,
@@ -139,7 +128,42 @@ def test_on_new_response(time_ms_mock):
             4,
             tags=['route:test_route', 'status_code:200', 'status_type:2xx']
         ),
-    ])
+    ]),
+    ('test_route', None, [
+        mock.call(
+            'pyramid.request.duration.total',
+            4,
+            tags=['route:test_route', 'status_code:200', 'status_type:2xx']
+        ),
+    ]),
+    (None, None, [
+        mock.call(
+            'pyramid.request.duration.total',
+            4,
+            tags=['status_code:200', 'status_type:2xx']
+        ),
+    ]),
+])
+def test_on_new_response(time_ms_mock, route_name, before_render_start, expected):
+    new_response_event = mock.Mock()
+    if route_name:
+        new_response_event.request.matched_route.name = route_name
+    else:
+        new_response_event.request.matched_route = None
+    new_response_event.response.status_code = 200
+    time_ms_mock.return_value = 5
+    timings = new_response_event.request.timings = {}
+    timings['new_request_start'] = 1
+    if before_render_start:
+        timings['before_render_start'] = 4
+
+    on_new_response(new_response_event)
+
+    assert timings['request_duration'] == 4
+
+    if before_render_start:
+        assert timings['template_render_duration'] == 1
+    new_response_event.request.registry.datadog.timing.assert_has_calls(expected)
 
 
 @patch('time.time')
