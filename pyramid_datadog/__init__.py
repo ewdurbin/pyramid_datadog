@@ -14,23 +14,19 @@ def time_ms():
     return time.time() * 1000
 
 
-def configure_metrics(config, app_name, datadog_metrics):
+def configure_metrics(config, datadog_metrics):
     '''
-    * app_name: name of your application that will be in a tag
     * datadog_metrics: datadog metrics object initialized by user
     '''
     config.registry.datadog = datadog_metrics
-    config.registry.datadog_app_name = app_name
-    config.registry.datadog_app_tag = 'app:%s' % app_name
 
 
 def on_app_created(app_created_event):
     registry = app_created_event.app.registry
     datadog = registry.datadog
     datadog.event(
-        'Pyramid application %s started' % registry.datadog_app_name,
-        'Pyramid application %s started' % registry.datadog_app_name,
-        tags=[registry.datadog_app_tag]
+        'Pyramid application started',
+        'Pyramid application started'
     )
 
 
@@ -50,7 +46,6 @@ def on_before_traversal(before_traversal_event):
     datadog.timing(
         'pyramid.request.duration.route_match',
         timings['route_match_duration'],
-        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -65,7 +60,6 @@ def on_context_found(context_found_event):
     datadog.timing(
         'pyramid.request.duration.traversal',
         timings['traversal_duration'],
-        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -80,7 +74,6 @@ def on_before_render(before_render_event):
     datadog.timing(
         'pyramid.request.duration.view',
         timings['view_duration'],
-        tags=[request.registry.datadog_app_tag],
     )
 
 
@@ -92,7 +85,7 @@ def on_new_response(new_response_event):
     timings['request_duration'] = \
         new_response_time - timings['new_request_start']
 
-    tags = [request.registry.datadog_app_tag]
+    tags = []
     datadog = request.registry.datadog
 
     if request.matched_route:

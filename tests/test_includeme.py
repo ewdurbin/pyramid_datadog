@@ -39,24 +39,19 @@ def test_includeme():
 def test_configure_metrics():
     config = mock.Mock()
     datadog_metrics = mock.Mock()
-    configure_metrics(config, 'app_name', datadog_metrics)
+    configure_metrics(config, datadog_metrics)
 
     config.registry.datadog == datadog_metrics
-    config.registry.datadog_app_name = 'app_name'
-    config.registry.datadog_app_tag = 'app:app_name'
 
 
 def test_on_app_created():
     app_created_event = mock.Mock()
     app_created_event.app.registry.datadog = mock.Mock()
-    app_created_event.app.registry.datadog_app_name = 'app_name'
-    app_created_event.app.registry.datadog_app_tag = 'app:app_name'
     on_app_created(app_created_event)
 
     app_created_event.app.registry.datadog.event.assert_called_once_with(
-        'Pyramid application app_name started',
-        'Pyramid application app_name started',
-        tags=['app:app_name']
+        'Pyramid application started',
+        'Pyramid application started',
     )
 
 
@@ -64,6 +59,7 @@ def test_on_app_created():
 def test_on_new_request(time_ms_mock):
     new_request_event = mock.Mock()
     time_ms_mock.return_value = 1
+
     on_new_request(new_request_event)
 
     assert new_request_event.request.timings['new_request_start'] == 1
@@ -74,14 +70,13 @@ def test_on_before_traversal(time_ms_mock):
     before_traversal_event = mock.Mock()
     before_traversal_event.request.timings = {}
     before_traversal_event.request.timings['new_request_start'] = 1
-    before_traversal_event.request.registry.datadog_app_tag = 'app:app_name'
     time_ms_mock.return_value = 2
 
     on_before_traversal(before_traversal_event)
+
     before_traversal_event.request.registry.datadog.timing.assert_called_once_with(
         'pyramid.request.duration.route_match',
         1,
-        tags=['app:app_name']
     )
 
 
@@ -90,15 +85,14 @@ def test_on_context_found(time_ms_mock):
     context_found_event = mock.Mock()
     context_found_event.request.timings = {}
     context_found_event.request.timings['new_request_start'] = 1
-    context_found_event.request.registry.datadog_app_tag = 'app:app_name'
     time_ms_mock.return_value = 3
 
     on_context_found(context_found_event)
+
     assert context_found_event.request.timings['view_code_start'] == 3
     context_found_event.request.registry.datadog.timing.assert_called_once_with(
         'pyramid.request.duration.traversal',
         2,
-        tags=['app:app_name']
     )
 
 
@@ -107,7 +101,6 @@ def test_on_before_render(time_ms_mock):
     before_render_event = mock.Mock()
     before_render_event = {'request': mock.Mock()}
     timings = before_render_event['request'].timings = {}
-    before_render_event['request'].registry.datadog_app_tag = 'app:app_name'
     timings['view_code_start'] = 3
     time_ms_mock.return_value = 4
 
@@ -115,18 +108,15 @@ def test_on_before_render(time_ms_mock):
 
     assert timings['view_duration'] == 1
     assert timings['before_render_start'] == 4
-
     before_render_event['request'].registry.datadog.timing.assert_called_once_with(
         'pyramid.request.duration.view',
         1,
-        tags=['app:app_name']
     )
 
 
 @patch('pyramid_datadog.time_ms')
 def test_on_new_response(time_ms_mock):
     new_response_event = mock.Mock()
-    new_response_event.request.registry.datadog_app_tag = 'app:app_name'
     new_response_event.request.matched_route.name = 'test_route'
     new_response_event.response.status_code = 200
     time_ms_mock.return_value = 5
@@ -142,12 +132,12 @@ def test_on_new_response(time_ms_mock):
         mock.call(
             'pyramid.request.duration.template_render',
             1,
-            tags=['app:app_name', 'route:test_route']
+            tags=['route:test_route']
         ),
         mock.call(
             'pyramid.request.duration.total',
             4,
-            tags=['app:app_name', 'route:test_route', 'status_code:200', 'status_type:2xx']
+            tags=['route:test_route', 'status_code:200', 'status_type:2xx']
         ),
     ])
 
