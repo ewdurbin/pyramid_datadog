@@ -8,15 +8,17 @@ Installation
 =============
 
 .. code-block:: python
+
     pip install pyramid_datadog
 
 
 Usage
 ======
 
-.. code-block:: python
-    from datadog import statsd
 
+.. code-block:: python
+
+    from datadog import statsd
 
     def main(global_config, **settings):
 
@@ -33,20 +35,14 @@ What pyramid_datadog will measure for you
 
 Using pyramid.events pyramid_datadog will log the following metrics in datadog:
 
-+-----------------------------------------+--------------------------------+
-| Metric                                  | Tags                           |
-+=========================================|================================|
-| pyramid.request.duration.route_match    |                                |
-+-----------------------------------------+--------------------------------+
-| pyramid.request.duration.traversal      |                                |
-+-----------------------------------------+--------------------------------+
-| pyramid.request.duration.view           | route                          |
-+-----------------------------------------+--------------------------------+
-| pyramid.request.duration.template_render| route                          |
-+-----------------------------------------+--------------------------------+
-| pyramid.request.duration.total          | route, status_code, status_type|
-+-----------------------------------------+--------------------------------+
-
-
+========================================== ================================
+Metric                                      tags
+========================================== ================================
+pyramid.request.duration.route_match
+pyramid.request.duration.traversal
+pyramid.request.duration.view              route
+pyramid.request.duration.template_render   route
+pyramid.request.duration.total             route, status_code, status_type
+========================================== ================================
 
 Please refer to the following link for information on the chronological order of events during a pyramid request http://docs.pylonsproject.org/projects/pyramid/en/latest/narr/router.html
