@@ -123,16 +123,8 @@ def test_on_new_response(time_ms_mock):
     assert timings['request_duration'] == 4
     assert timings['template_render_duration'] == 1
     new_response_event.request.registry.datadog.timing.assert_has_calls([
-        mock.call(
-            mock.ANY,
-            1,
-            tags=mock.ANY,
-        ),
-        mock.call(
-            mock.ANY,
-            4,
-            tags=mock.ANY,
-        ),
+        mock.call(mock.ANY, 1, tags=mock.ANY),
+        mock.call(mock.ANY, 4, tags=mock.ANY),
     ])
 
 
