@@ -1,5 +1,4 @@
 import mock
-import pytest
 from mock import patch
 from pyramid_datadog import (
     includeme,
@@ -75,10 +74,8 @@ def test_on_before_traversal(time_ms_mock):
 
     on_before_traversal(before_traversal_event)
 
-    before_traversal_event.request.registry.datadog.timing.assert_called_once_with(
-        'pyramid.request.duration.route_match',
-        1,
-    )
+    (metric, value), kwargs = before_traversal_event.request.registry.datadog.timing.call_args
+    assert value == 1
 
 
 @patch('pyramid_datadog.time_ms')
@@ -91,10 +88,8 @@ def test_on_context_found(time_ms_mock):
     on_context_found(context_found_event)
 
     assert context_found_event.request.timings['view_code_start'] == 3
-    context_found_event.request.registry.datadog.timing.assert_called_once_with(
-        'pyramid.request.duration.traversal',
-        2,
-    )
+    (metric, value), kwargs = context_found_event.request.registry.datadog.timing.call_args
+    assert value == 2
 
 
 @patch('pyramid_datadog.time_ms')
@@ -110,62 +105,35 @@ def test_on_before_render(time_ms_mock):
 
     assert timings['view_duration'] == 1
     assert timings['before_render_start'] == 4
-    before_render_event['request'].registry.datadog.timing.assert_called_once_with(
-        'pyramid.request.duration.view',
-        1,
-        tags=['route:route_name']
-    )
+
+    (metric, value), kwargs = before_render_event['request'].registry.datadog.timing.call_args
+    assert value == 1
 
 
 @patch('pyramid_datadog.time_ms')
-@pytest.mark.parametrize("route_name, before_render_start, expected", [
-    ('test_route', 4, [
-        mock.call(
-            'pyramid.request.duration.template_render',
-            1,
-            tags=['route:test_route']
-        ),
-        mock.call(
-            'pyramid.request.duration.total',
-            4,
-            tags=['route:test_route', 'status_code:200', 'status_type:2xx']
-        ),
-    ]),
-    ('test_route', None, [
-        mock.call(
-            'pyramid.request.duration.total',
-            4,
-            tags=['route:test_route', 'status_code:200', 'status_type:2xx']
-        ),
-    ]),
-    (None, None, [
-        mock.call(
-            'pyramid.request.duration.total',
-            4,
-            tags=['status_code:200', 'status_type:2xx']
-        ),
-    ]),
-])
-def test_on_new_response(time_ms_mock, route_name, before_render_start, expected):
+def test_on_new_response(time_ms_mock):
     new_response_event = mock.Mock()
-    if route_name:
-        new_response_event.request.matched_route.name = route_name
-    else:
-        new_response_event.request.matched_route = None
-    new_response_event.response.status_code = 200
     time_ms_mock.return_value = 5
     timings = new_response_event.request.timings = {}
     timings['new_request_start'] = 1
-    if before_render_start:
-        timings['before_render_start'] = 4
+    timings['before_render_start'] = 4
 
     on_new_response(new_response_event)
 
     assert timings['request_duration'] == 4
-
-    if before_render_start:
-        assert timings['template_render_duration'] == 1
-    new_response_event.request.registry.datadog.timing.assert_has_calls(expected)
+    assert timings['template_render_duration'] == 1
+    new_response_event.request.registry.datadog.timing.assert_has_calls([
+        mock.call(
+            mock.ANY,
+            1,
+            tags=mock.ANY,
+        ),
+        mock.call(
+            mock.ANY,
+            4,
+            tags=mock.ANY,
+        ),
+    ])
 
 
 @patch('time.time')
@@ -173,3 +141,93 @@ def test_time_ms(mock_time):
     mock_time.return_value = 1
     return_value = time_ms()
     assert return_value == 1000
+
+
+def test_500():
+    from pyramid.config import Configurator
+    from webtest import TestApp
+
+    mock_metric = mock.Mock()
+
+    def main(global_config, **settings):
+        config = Configurator(settings=settings)
+        config.include("pyramid_datadog")
+
+        config.configure_metrics(mock_metric)
+
+        def test_view(request):
+            from pyramid.httpexceptions import HTTPInternalServerError
+            return HTTPInternalServerError()
+
+        config.add_route("home", "/")
+        config.add_view(test_view, route_name="home", renderer='json')
+
+        return config.make_wsgi_app()
+
+    app = main({})
+    app = TestApp(app)
+    app.get("/", status=500)
+
+    mock_metric.timing.assert_has_calls([
+        mock.call('pyramid.request.duration.route_match', mock.ANY),
+        mock.call('pyramid.request.duration.traversal', mock.ANY),
+        mock.call('pyramid.request.duration.total', mock.ANY, tags=['route:home', 'status_code:500', 'status_type:5xx'])
+    ])
+
+
+def test_404():
+    from pyramid.config import Configurator
+    from webtest import TestApp
+
+    mock_metric = mock.Mock()
+
+    def main(global_config, **settings):
+        config = Configurator(settings=settings)
+        config.include("pyramid_datadog")
+
+        config.configure_metrics(mock_metric)
+
+        config.add_route("home", "/")
+
+        return config.make_wsgi_app()
+
+    app = main({})
+    app = TestApp(app)
+    app.get("/foo", status=404)
+    mock_metric.timing.assert_has_calls([
+        mock.call('pyramid.request.duration.route_match', mock.ANY),
+        mock.call('pyramid.request.duration.traversal', mock.ANY),
+        mock.call('pyramid.request.duration.total', mock.ANY, tags=['status_code:404', 'status_type:4xx'])
+    ])
+
+
+def test_200():
+    from pyramid.config import Configurator
+    from webtest import TestApp
+
+    mock_metric = mock.Mock()
+
+    def main(global_config, **settings):
+        config = Configurator(settings=settings)
+        config.include("pyramid_datadog")
+
+        config.configure_metrics(mock_metric)
+
+        def test_view(request):
+            return {}
+
+        config.add_route("home", "/")
+        config.add_view(test_view, route_name="home", renderer='json')
+
+        return config.make_wsgi_app()
+
+    app = main({})
+    app = TestApp(app)
+    app.get("/")
+    mock_metric.timing.assert_has_calls([
+        mock.call('pyramid.request.duration.route_match', mock.ANY),
+        mock.call('pyramid.request.duration.traversal', mock.ANY),
+        mock.call('pyramid.request.duration.view', mock.ANY, tags=['route:home']),
+        mock.call('pyramid.request.duration.template_render', mock.ANY, tags=['route:home']),
+        mock.call('pyramid.request.duration.total', mock.ANY, tags=['route:home', 'status_code:200', 'status_type:2xx'])
+    ])
