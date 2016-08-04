@@ -32,8 +32,7 @@ def on_app_created(app_created_event):
 
 def on_new_request(new_request_event):
     request = new_request_event.request
-    request.timings = {}
-    request.timings['new_request_start'] = time_ms()
+    request.timings = {'new_request_start': time_ms()}
 
 
 def on_before_traversal(before_traversal_event):
@@ -42,8 +41,7 @@ def on_before_traversal(before_traversal_event):
     timings = request.timings
     timings['route_match_duration'] = time_ms() - timings['new_request_start']
 
-    datadog = request.registry.datadog
-    datadog.timing(
+    request.registry.datadog.timing(
         'pyramid.request.duration.route_match',
         timings['route_match_duration'],
     )
@@ -56,8 +54,7 @@ def on_context_found(context_found_event):
     timings['traversal_duration'] = time_ms() - timings['new_request_start']
     timings['view_code_start'] = time_ms()
 
-    datadog = request.registry.datadog
-    datadog.timing(
+    request.registry.datadog.timing(
         'pyramid.request.duration.traversal',
         timings['traversal_duration'],
     )
@@ -69,11 +66,10 @@ def on_before_render(before_render_event):
     timings = request.timings
     timings['view_duration'] = time_ms() - timings['view_code_start']
     timings['before_render_start'] = time_ms()
-    datadog = request.registry.datadog
 
     route_tag = 'route:%s' % request.matched_route.name
 
-    datadog.timing(
+    request.registry.datadog.timing(
         'pyramid.request.duration.view',
         timings['view_duration'],
         tags=[route_tag],
