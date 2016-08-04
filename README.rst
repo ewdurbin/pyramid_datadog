@@ -1,18 +1,18 @@
 pyramid_datadog
-=====
+===============
 
 Datadog integration for Pyramid.
 This library allows you to create graphs in datadog to keep track of number of requests and requests durations.
 
 Installation
-=====
+=============
 
 .. code-block:: python
-   pip install pyramid_datadog
+    pip install pyramid_datadog
 
 
 Usage
-====
+======
 
 .. code-block:: python
     from datadog import statsd
@@ -29,7 +29,7 @@ Usage
 
 
 What pyramid_datadog will measure for you
-======
+=========================================
 
 Using pyramid.events pyramid_datadog will log the following metrics in datadog:
 
