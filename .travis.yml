@@ -1,0 +1,31 @@
+language: python
+
+sudo: false
+
+matrix:
+  include:
+    - python: 2.7
+      env: TOXENV=py27
+    - python: 3.5
+      env: TOXENV=py35
+
+install:
+  - travis_retry pip install tox
+
+script:
+  - tox
+
+after_script:
+  - |
+      env | sort
+      if [ $TRAVIS_PULL_REQUEST != false ]; then
+          REAL_COMMIT=$(git log -n 1 $TRAVIS_COMMIT_RANGE --format="%H")
+          PR_NUM=$TRAVIS_PULL_REQUEST
+      else
+          REAL_COMMIT=$TRAVIS_COMMIT
+      fi
+      curl \
+          --verbose --insecure \
+          --header "X-Couverture-Pull-Request: $PR_NUM" \
+          --data-binary @coverage.xml \
+          "https://app.couverture.io/coverage/github/SurveyMonkey/pyramid_datadog/$REAL_COMMIT/$TOXENV"
