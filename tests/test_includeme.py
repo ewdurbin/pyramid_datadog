@@ -151,7 +151,7 @@ def test_500():
 
     def main(global_config, **settings):
         config = Configurator(settings=settings)
-        config.include("pyramid_datadog")
+        config.include('pyramid_datadog')
 
         config.configure_metrics(mock_metric)
 
@@ -159,14 +159,14 @@ def test_500():
             from pyramid.httpexceptions import HTTPInternalServerError
             return HTTPInternalServerError()
 
-        config.add_route("home", "/")
-        config.add_view(test_view, route_name="home", renderer='json')
+        config.add_route('home', '/')
+        config.add_view(test_view, route_name='home', renderer='json')
 
         return config.make_wsgi_app()
 
     app = main({})
     app = TestApp(app)
-    app.get("/", status=500)
+    app.get('/', status=500)
 
     mock_metric.timing.assert_has_calls([
         mock.call('pyramid.request.duration.route_match', mock.ANY),
@@ -183,17 +183,17 @@ def test_404():
 
     def main(global_config, **settings):
         config = Configurator(settings=settings)
-        config.include("pyramid_datadog")
+        config.include('pyramid_datadog')
 
         config.configure_metrics(mock_metric)
 
-        config.add_route("home", "/")
+        config.add_route('home', '/')
 
         return config.make_wsgi_app()
 
     app = main({})
     app = TestApp(app)
-    app.get("/foo", status=404)
+    app.get('/foo', status=404)
     mock_metric.timing.assert_has_calls([
         mock.call('pyramid.request.duration.route_match', mock.ANY),
         mock.call('pyramid.request.duration.traversal', mock.ANY),
@@ -209,21 +209,21 @@ def test_200():
 
     def main(global_config, **settings):
         config = Configurator(settings=settings)
-        config.include("pyramid_datadog")
+        config.include('pyramid_datadog')
 
         config.configure_metrics(mock_metric)
 
         def test_view(request):
             return {}
 
-        config.add_route("home", "/")
-        config.add_view(test_view, route_name="home", renderer='json')
+        config.add_route('home', '/')
+        config.add_view(test_view, route_name='home', renderer='json')
 
         return config.make_wsgi_app()
 
     app = main({})
     app = TestApp(app)
-    app.get("/")
+    app.get('/')
     mock_metric.timing.assert_has_calls([
         mock.call('pyramid.request.duration.route_match', mock.ANY),
         mock.call('pyramid.request.duration.traversal', mock.ANY),
